@@ -95,18 +95,30 @@ var starwars = {
 	},
 
 	setDefender: function(defender) {
-		// This method will be called when a defender is selected.
-		// * Set the game state = Defender Selected
-		// * Remove it from the list of available enemies
-		// * Move it to the defender area
-		if (starwars.defender == "") {
-			// Set the defender for the first time
-			starwars.defender = defender;
-		}		
-		else {
-			// One defender has already been selected, select a new one
-			starwars.defender = defender;		
-		}
+		var defenderId = '#' + defender.id;
+
+		// Use this for now.  Once functionality works to move
+		// the players available to the enemies available section
+		// this will use the list of enemies available
+		this.defender = this.playersAvailable[defenderId];
+
+		// Move the selected defender to the defender area
+		$(defenderId).remove();
+
+		// Get the defender div
+		var defenderDiv = $('#defender');
+
+		// Add a div for the name of the defender selected
+		defenderDiv.append('<div>' + this.defender.name + '</div>');
+
+		// Add an image for the player selected
+		var defenderImg = $('<img>');
+		defenderImg.attr('src', 'assets/images/' + defender.id + '.jpg');
+		defenderImg.attr('alt', this.player.id);
+		defenderDiv.append(defenderImg);
+
+		// Add a div for the health points of the player selected
+		defenderDiv.append('<div>' + "200");
 
 		this.state = this.defenderSelected;
 	},
@@ -117,11 +129,25 @@ var starwars = {
 	},
 
 	attack: function() {
-		// this will be called once the player and defender are selected
-		// and the attack button is clicked.
+		// this will be called whenever the attack button is clicked.
 		console.log("starwars.play: attack button pressed");
 
-		// For now, use the button for testing other jQuery stuff
+		if (this.state != this.defenderSelected && 
+			this.state != this.attacking) {
+			// ignore the attack button
+			return;
+		}
+
+		/*****
+		 *
+		 * At this point, we are in attack mode.  Check the healthpoints
+		 * of the player and the defender.  Depending on the result perform
+		 * the following action:
+		 *
+		 * If the player's healthpoints are > 0
+		 *		If the defender's healthpoints are > 0
+		 *			
+		 */
 	},
 
 } // end of starwars game object
@@ -133,7 +159,12 @@ $(document).ready(function(){
 	starwars.initGame();
 
 	$(".thumbnail").on("click", function(){
-		// If any of the characters are clicked on, take appropriate action
+		// If any of the characters are clicked on, take appropriate action.
+		//
+		// NOTE: For consistency, this should either go in another method of
+		// the game or the attack button click event should check the state 
+		// just like this one before calling the attack method.
+		//
 		if (starwars.state == starwars.newGame){
 			starwars.setPlayer(this);
 		}
@@ -150,15 +181,11 @@ $(document).ready(function(){
 			// ignore for now
 		}
 		else {
-			// console.log("Invalid State: " + starwars.state);
+			console.log("Invalid State: " + starwars.state);
 		}
     });
 
     $(".attackButton").on("click", function(){
-    	// Make sure the player and defender have been selected
-    	if (starwars.player == "" || starwars.defender == "")
-    		return;  // ignore attack button for now
-
-    	// player attacks defender here
+  		starwars.attack();
     });
 })
