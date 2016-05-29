@@ -15,23 +15,27 @@ var starwars = {
 
 	state: this.newGame,
 
-	player: {},		// set to the first character selected by the user	
+	player: {},		// set to the first character selected by the user
+	playerId: "",	// used to find the player in the list of playersAvailable	
 	defender: {},	// set to the next character selected by the user
+	defenderId: "", // used to find the defender in the list of playersAvailable
 
 	playersAvailable: {},
 	enemiesAvailable: {},
 
-	enemyCount: 3,
+	playerCount: 0,
 
 	// Reset the game.
 	initGame: function() {
 		this.state = this.newGame;
 		this.player = {},	// may need to use clear() function here
 		this.defender = {},
-		this.enemyCount = 3;
 
 		this.loadPlayersAvailable();
 		this.clearEnemiesAvailable();
+
+//		this.playerCount = this.playersAvailable.length;
+		this.playerCount = 4;
 	},
 
 	// Build the html to display all the characters available 
@@ -39,13 +43,14 @@ var starwars = {
 	// in the game regardless of when this method is called.
 	loadPlayersAvailable: function() {
 		this.playersAvailable = {
-			'#darthvader': { name: 'Darth Vader', healthPoints: 120, basePower: 10, attackPower: 0 },			
-			'#lukeskywalker': { name: 'Luke Skywalker', healthPoints: 100, basePower: 20, attackPower: 0 },			
-			'#stormtrooper': { name: 'Storm Trooper', healthPoints: 150, basePower: 30, attackPower: 0 },			
-			'#yoda': { name: 'Yoda', healthPoints: 100, basePower: 40, attackPower: 0 }			
+			'darthvader': { name: 'Darth Vader', healthPoints: 120, basePower: 10, attackPower: 0 },			
+			'lukeskywalker': { name: 'Luke Skywalker', healthPoints: 100, basePower: 20, attackPower: 0 },			
+			'stormtrooper': { name: 'Storm Trooper', healthPoints: 150, basePower: 30, attackPower: 0 },			
+			'yoda': { name: 'Yoda', healthPoints: 100, basePower: 40, attackPower: 0 }			
 		};
 
 		// Push the thumbnail info for each character into the html
+
 
 	},
 
@@ -71,13 +76,13 @@ var starwars = {
 		// * Move the available players to the enemies available section
 		// * Set the game state to 1 for Player Selected
 
-		// Needed for jQuery
-		var playerId = '#' + player.id;
+		// Keep the object id for searches later
+		this.playerId = player.id;
 
-		this.player = this.playersAvailable[playerId];
+		this.player = this.playersAvailable[this.playerId];
 
 		// Move the selected player to the player area
-		$(playerId).remove();
+		$('#' + this.playerId).remove();
 
 		// Get the player div
 		var playerDiv = $('#player');
@@ -87,26 +92,28 @@ var starwars = {
 
 		// Add an image for the player selected
 		var playerImg = $('<img>');
-		playerImg.attr('src', 'assets/images/' + player.id + '.jpg');
-		playerImg.attr('alt', this.player.id);
+		playerImg.attr('src', 'assets/images/' + this.playerId + '.jpg');
+		playerImg.attr('alt', this.playerId);
 		playerDiv.append(playerImg);
 
 		// Add a div for the health points of the player selected
 		playerDiv.append('<div id="player-health">' + this.player.healthPoints);
 
+		this.playerCount--;
 		this.state = this.playerSelected;
 	},
 
 	setDefender: function(defender) {
-		var defenderId = '#' + defender.id;
+		// Keep the object id for searches later
+		this.defenderId = defender.id;
 
 		// Use this for now.  Once functionality works to move
 		// the players available to the enemies available section
 		// this will then use the list of enemies available
-		this.defender = this.playersAvailable[defenderId];
+		this.defender = this.playersAvailable[this.defenderId];
 
 		// Move the selected defender to the defender area
-		$(defenderId).remove();
+		$('#' + this.defenderId).remove();
 
 		// Get the defender div
 		var defenderDiv = $('#defender');
@@ -116,13 +123,14 @@ var starwars = {
 
 		// Add an image for the player selected
 		var defenderImg = $('<img>');
-		defenderImg.attr('src', 'assets/images/' + defender.id + '.jpg');
-		defenderImg.attr('alt', this.player.id);
+		defenderImg.attr('src', 'assets/images/' + this.defenderId + '.jpg');
+		defenderImg.attr('alt', this.defenderId);
 		defenderDiv.append(defenderImg);
 
 		// Add a div for the health points of the player selected
 		defenderDiv.append('<div id="player-health">' + this.defender.healthPoints);
 
+		this.playerCount--;
 		this.state = this.defenderSelected;
 	},
 
@@ -183,14 +191,12 @@ var starwars = {
 
 		if (this.defender.healthPoints <= 0) {
 //			if ($('#playersAvailable').children('.thumbnail').length > 0) {
-			if (this.enemyCount > 1) {
-				this.enemyCount--;
+			if (this.playerCount > 0) {
 				this.state = this.enemyDefeated;  // need to select another defender
-				var defenderId = '#' + this.defender.id;
-				$(defenderId).remove();
+				$('#defender').remove();
 			}
 			else {
-				this.state = this.gameLost;
+				this.state = this.gameWon;
 			}
 		}
 		else {
@@ -261,7 +267,7 @@ $(document).ready(function(){
 			// ignore for now
 		}
 		else {
-			console.log("Invalid State: " + starwars.state);
+			console.log("Unable to select a character.  Invalid state: " + starwars.state);
 		}
     });
 
@@ -278,6 +284,9 @@ $(document).ready(function(){
   		}
   		else if (starwars.state == starwars.enemyDefeated) {
   			alert("Enemy Defeated!!  Choose another Enemy!");
+  		}
+  		else {
+  			console.log("Invalid state for Attacking: " + starwars.state);
   		}
     });
 })
