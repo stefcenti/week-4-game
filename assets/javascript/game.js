@@ -6,7 +6,6 @@ var starwars = {
 	// 5: Game Lost, 6: Enemy Defeated, 7: Game Won
 
 	newGame: 1, 
-
 	playerSelected: 2, 
 	defenderSelected: 3,
 	attacking: 4,
@@ -15,17 +14,21 @@ var starwars = {
 	gameWon: 7,
 
 	state: this.newGame,
-	player: "", 	// set to the first character selected by the user
-	defender: "", 	// set to the next character selected by the user
+
+	player: {},		// set to the first character selected by the user	
+	defender: {},	// set to the next character selected by the user
 
 	playersAvailable: {},
 	enemiesAvailable: {},
+
+	enemyCount: 3,
 
 	// Reset the game.
 	initGame: function() {
 		this.state = this.newGame;
 		this.player = {},	// may need to use clear() function here
 		this.defender = {},
+		this.enemyCount = 3;
 
 		this.loadPlayersAvailable();
 		this.clearEnemiesAvailable();
@@ -36,10 +39,10 @@ var starwars = {
 	// in the game regardless of when this method is called.
 	loadPlayersAvailable: function() {
 		this.playersAvailable = {
-			'#darthvader': { name: 'Darth Vader', healthPoints: 120, attackPower: 10 },			
-			'#lukeskywalker': { name: 'Luke Skywalker', healthPoints: 100, attackPower: 20},			
-			'#stormtrooper': { name: 'Storm Trooper', healthPoints: 150, attackPower: 30},			
-			'#yoda': { name: 'Yoda', healthPoints: 100, attackPower: 40}			
+			'#darthvader': { name: 'Darth Vader', healthPoints: 120, basePower: 10, attackPower: 0 },			
+			'#lukeskywalker': { name: 'Luke Skywalker', healthPoints: 100, basePower: 20, attackPower: 0 },			
+			'#stormtrooper': { name: 'Storm Trooper', healthPoints: 150, basePower: 30, attackPower: 0 },			
+			'#yoda': { name: 'Yoda', healthPoints: 100, basePower: 40, attackPower: 0 }			
 		};
 
 		// Push the thumbnail info for each character into the html
@@ -89,7 +92,7 @@ var starwars = {
 		playerDiv.append(playerImg);
 
 		// Add a div for the health points of the player selected
-		playerDiv.append('<div>' + "100");
+		playerDiv.append('<div id="player-health">' + this.player.healthPoints);
 
 		this.state = this.playerSelected;
 	},
@@ -99,7 +102,7 @@ var starwars = {
 
 		// Use this for now.  Once functionality works to move
 		// the players available to the enemies available section
-		// this will use the list of enemies available
+		// this will then use the list of enemies available
 		this.defender = this.playersAvailable[defenderId];
 
 		// Move the selected defender to the defender area
@@ -118,36 +121,113 @@ var starwars = {
 		defenderDiv.append(defenderImg);
 
 		// Add a div for the health points of the player selected
-		defenderDiv.append('<div>' + "200");
+		defenderDiv.append('<div id="player-health">' + this.defender.healthPoints);
 
 		this.state = this.defenderSelected;
-	},
-
-	setNewDefender: function(newDefender) {
-		// This method will be called when a new defender is selected.
-		// It may not be necessary.
 	},
 
 	attack: function() {
 		// this will be called whenever the attack button is clicked.
 		console.log("starwars.play: attack button pressed");
 
-		if (this.state != this.defenderSelected && 
-			this.state != this.attacking) {
-			// ignore the attack button
-			return;
+		if (this.state != this.attacking) {
+			if (this.state != this.defenderSelected) {
+				// ignore the attack button, the defender must be selected first
+				return;
+			}
+			this.state = this.attacking;
 		}
 
 		/*****
 		 *
-		 * At this point, we are in attack mode.  Check the healthpoints
-		 * of the player and the defender.  Depending on the result perform
-		 * the following action:
+		 *	At this point, we are in attack mode.  Check the healthpoints
+		 *	of the player and the defender.  Depending on the result perform
+		 *	the following action:
 		 *
-		 * If the player's healthpoints are > 0
-		 *		If the defender's healthpoints are > 0
-		 *			
+		 *	If the player's healthpoints are <= 0
+		 *		- state = GameLost
+		 *		- return;
+		 *
+		 *	Increase the player's attack power by it's base power value
+		 *
+		 *	If the defender's healthpoints are > 0
+		 *		- Decrease defender's hp by player's attack power points
+		 *
+		 *	If the defender's hp <= 0
+		 *		- Remove the defender
+		 *		If there are still players available
+		 *			-Indicate to user to select another enemy (is this necessary?)
+		 *			-Wait for selection
+		 *		Else
+		 *			// This may be done outside of this method
+		 *			- state = GameWon
+		 *			- alert user of game state
+		 *			- restart game 
+		 *	Else
+		 *		- Counter Attack
+		 *
+		 * Update the defender's healthpoints below it's picture.
+		 *
 		 */
+
+		if (this.player.healthPoints <= 0) {
+			this.state = this.GameLost;
+			return;
+		}
+
+		this.player.attackPower += this.player.basePower;
+
+		if (this.defender.healthPoints > 0) {
+			this.defender.healthPoints -= this.player.attackPower;
+		}
+
+		if (this.defender.healthPoints <= 0) {
+//			if ($('#playersAvailable').children('.thumbnail').length > 0) {
+			if (this.enemyCount > 1) {
+				this.enemyCount--;
+				this.state = this.enemyDefeated;  // need to select another defender
+				var defenderId = '#' + this.defender.id;
+				$(defenderId).remove();
+			}
+			else {
+				this.state = this.gameLost;
+			}
+		}
+		else {
+			this.counterAttack();
+		}
+
+		// Update defender's HP below image
+		console.log("Defender HP: " + this.defender.healthPoints);
+		$('#defender').children('#player-health').text(this.defender.healthPoints);
+	},
+
+	counterAttack: function() {
+		/*****
+		 *
+		 * At this point, the player has already attacked the defender.
+		 * The defender still has health points and is now attacking the player.
+		 *
+		 * Decrease the player's healthpoints by the defender's attack 
+		 * (i.e. counter attack) power.
+		 *
+		 * If the player's healthpoints <= 0
+		 *		- state = GameLost
+		 *
+		 * Update the player's healthpoints below it's picture.
+		 *
+		 */
+		 console.log("method: counterAttack() called");
+
+		 this.player.healthPoints -= this.defender.basePower;
+
+		 if (this.player.healthPoints <= 0) {
+		 	this.state = this.gameLost;
+		 }
+
+		 // Update the player's healthpoints below it's picture
+		 console.log("Player's HP: " + this.player.healthPoints);
+		$('#player').children('#player-health').text(this.player.healthPoints);
 	},
 
 } // end of starwars game object
@@ -187,5 +267,17 @@ $(document).ready(function(){
 
     $(".attackButton").on("click", function(){
   		starwars.attack();
+
+  		if (starwars.state == starwars.gameWon) {
+  			alert("Game Won!!");
+  			starwars.initGame();
+  		}
+  		else if (starwars.state == starwars.gameLost) {
+  			alert("Game Lost!!");
+  			starwars.initGame();
+  		}
+  		else if (starwars.state == starwars.enemyDefeated) {
+  			alert("Enemy Defeated!!  Choose another Enemy!");
+  		}
     });
 })
