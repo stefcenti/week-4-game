@@ -193,7 +193,7 @@ var starwars = {
 //			if ($('#playersAvailable').children('.thumbnail').length > 0) {
 			if (this.playerCount > 0) {
 				this.state = this.enemyDefeated;  // need to select another defender
-				$('#defender').remove();
+				$('#defender').children(0).remove();
 			}
 			else {
 				this.state = this.gameWon;
